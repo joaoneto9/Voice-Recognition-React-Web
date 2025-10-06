@@ -1,9 +1,12 @@
 import { FaMicrophone } from 'react-icons/fa'
 import { useState } from 'react'
+import TextResult from './TextResult'
 
 export function AudioRecordButton() {
 
-    const [isActive, setIsActive] = useState(false);
+    const [isActive, setIsActive] = useState<boolean>(false);
+    const [response, setResponse] = useState<string>("");
+    
 
     async function handleRecordAudio() {
 
@@ -12,17 +15,20 @@ export function AudioRecordButton() {
             setIsActive(true);
 
             let stream: MediaStream | null = null;
-            let audioRecorder: MediaRecorder | null = null;
 
             try {
-                stream = await setupAudioComponent();
-                const {mediaRecorder, chunks} = startRecording(stream);
-                audioRecorder = mediaRecorder;
-                await new Promise(resolve => setTimeout(resolve, 10000));
-                const blob = await stopRecording(audioRecorder, chunks);
-                await sendAudioToServer(blob);
+                stream = await setupAudioComponent(); // ele starta o acessp ao microfone
+
+                const {mediaRecorder, chunks} = startRecording(stream); // inicia a gravação 
+
+                await new Promise(resolve => setTimeout(resolve, 10000)); // aguarda 10 segundos -> implementar um keyInterrupt
+
+                const blob = await stopRecording(mediaRecorder, chunks); // para a gravação 
+
+                const text = await getDataResponse(blob); // envia o áudio para o servidor que trancreve
+                setResponse(text); // seta a ultima resposta
             } catch (err) {
-                console.log("erro na gravacao");
+                console.log("erro na gravacao", err);
             } finally {
                 stream?.getTracks().forEach(track => track.stop());
                 setIsActive(false);
@@ -31,9 +37,18 @@ export function AudioRecordButton() {
 
     };
 
+    async function getDataResponse(blob: Blob) {
+        const response = await sendAudioToServer(blob);
+        const data = await response.json();
+
+        console.log("Resposta da requisição");
+
+        return data.text;
+    }
+
     return (
         <>
-            <div>
+            <div className="sound_button_container">
                 <button 
                     id="audio-button"
                     onClick={handleRecordAudio}
@@ -42,6 +57,7 @@ export function AudioRecordButton() {
                     <FaMicrophone size={80}/>
                 </button>
             </div>
+            <TextResult text={response}/>
         </>
     );
 
