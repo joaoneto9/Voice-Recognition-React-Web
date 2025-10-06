@@ -126,7 +126,7 @@ async function sendAudioToServer(blob: Blob): Promise<Response> {
 
     formData.append('audio', blob, 'gravacao.webm');
 
-    const response = await fetch('http://192.168.0.14:5000/transcribe', {
+    const response = await fetch('http://localhost:5000/transcribe', {
         method: 'POST',
         body: formData
     });
