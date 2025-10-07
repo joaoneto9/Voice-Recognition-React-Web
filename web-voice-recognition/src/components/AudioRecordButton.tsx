@@ -6,34 +6,59 @@ export function AudioRecordButton() {
 
     const [isActive, setIsActive] = useState<boolean>(false);
     const [response, setResponse] = useState<string>("");
+    const [stream, setStream] = useState<MediaStream | null>(null);
+    const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+    const [audioChunks, setAudioChunks] = useState<Blob[] | null>(null);
     
 
     async function handleRecordAudio() {
 
-        if (!isActive) {
+        setIsActive(!isActive);
 
-            setIsActive(true);
-
-            let stream: MediaStream | null = null;
+        if (isActive) {
 
             try {
-                stream = await setupAudioComponent(); // ele starta o acessp ao microfone
 
-                const {mediaRecorder, chunks} = startRecording(stream); // inicia a gravação 
+                if (recorder == null || audioChunks == null) {
+                    throw new Error("error");
+                }
 
-                await new Promise(resolve => setTimeout(resolve, 10000)); // aguarda 10 segundos -> implementar um keyInterrupt
+                const blob = await stopRecording(recorder, audioChunks);
 
-                const blob = await stopRecording(mediaRecorder, chunks); // para a gravação 
+                const text = await getDataResponse(blob);
 
-                const text = await getDataResponse(blob); // envia o áudio para o servidor que trancreve
-                setResponse(text); // seta a ultima resposta
+                setResponse(text);
+
             } catch (err) {
-                console.log("erro na gravacao", err);
+
+                console.log("erro parando a gravacao..." + err);
+
             } finally {
+
                 stream?.getTracks().forEach(track => track.stop());
-                setIsActive(false);
+
             }
+
+        } else {
+
+            try {
+
+                const newStream = await setupAudioComponent();
+                setStream(newStream);
+
+                const {mediaRecorder, chunks} = startRecording(newStream);
+
+                setRecorder(mediaRecorder);
+                
+                setAudioChunks(chunks);
+
+            } catch (err) {
+                console.log("erro: " + err);
+            }
+
         }
+
+
 
     };
 
@@ -125,7 +150,6 @@ function stopRecording(mediaRecorder: MediaRecorder, chunks: Blob[]): Promise<Bl
             resolve(blob);
         };
 
-        mediaRecorder.stop();
         console.log("gravacao parou.");
 
     });
