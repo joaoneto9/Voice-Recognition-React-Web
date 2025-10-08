@@ -45,7 +45,13 @@ export function AudioRecordButton() {
         try {
 
             const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true
+                audio: {
+                    sampleRate: { ideal: 48000 },
+                    channelCount: { ideal: 2 },
+                    echoCancellation: { ideal: false },
+                    noiseSuppression: { ideal: false },
+                    autoGainControl: { ideal: false }
+                }
             });
 
             console.log("acesso ok!");
