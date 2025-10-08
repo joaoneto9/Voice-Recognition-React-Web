@@ -12,10 +12,10 @@ export function AudioRecordButton() {
     
 
     async function handleRecordAudio() {
+        const isRecording = !isActive;
+        setIsActive(isRecording);
 
-        setIsActive(!isActive);
-
-        if (isActive) {
+        if (!isRecording) {
 
             try {
 
