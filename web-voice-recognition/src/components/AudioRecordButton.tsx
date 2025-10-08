@@ -1,69 +1,112 @@
 import { FaMicrophone } from 'react-icons/fa'
 import { useState } from 'react'
 import TextResult from './TextResult'
+import { transcriptePost } from '../requests/trasncriptPost'
+
+interface RecordingComponents {
+    mediaRecorder: MediaRecorder;
+    chunks: Blob[];
+}
 
 export function AudioRecordButton() {
 
     const [isActive, setIsActive] = useState<boolean>(false);
     const [response, setResponse] = useState<string>("");
-    const [stream, setStream] = useState<MediaStream | null>(null);
     const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
     const [audioChunks, setAudioChunks] = useState<Blob[] | null>(null);
     
-
     async function handleRecordAudio() {
         const isRecording = !isActive;
         setIsActive(isRecording);
 
         if (!isRecording) {
-
             try {
-
-                if (recorder == null || audioChunks == null) {
-                    throw new Error("error");
-                }
-
-                const blob = await stopRecording(recorder, audioChunks);
-
+                const blob = await stopRecording();
                 const text = await getDataResponse(blob);
 
                 setResponse(text);
-
             } catch (err) {
-
                 console.log("erro parando a gravacao..." + err);
-
-            } finally {
-
-                stream?.getTracks().forEach(track => track.stop());
-
             }
-
         } else {
-
-            try {
-
-                const newStream = await setupAudioComponent();
-                setStream(newStream);
-
-                const {mediaRecorder, chunks} = startRecording(newStream);
-
+            try {            
+                const {mediaRecorder, chunks} = await startRecording();
                 setRecorder(mediaRecorder);
                 
                 setAudioChunks(chunks);
-
             } catch (err) {
                 console.log("erro: " + err);
             }
-
         }
-
-
-
     };
 
+    async function setupMediaStream(): Promise<MediaStream> {
+
+        try {
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true
+            });
+
+            console.log("acesso ok!");
+
+            return stream;
+
+        } catch (err) {
+            alert("tem que ter acesso!" + err);
+            throw new Error("sem acesso");
+        }
+    }
+
+    function stopRecording(): Promise<Blob> {
+        if (recorder == null || audioChunks == null) {
+            throw new Error("error");
+        }
+
+        if (recorder.state !== 'inactive') {
+            recorder.stop();
+            console.log("parando...");
+        }
+
+        return new Promise((resolve) => {
+
+            recorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                resolve(blob);
+            };
+
+            console.log("gravacao parou.");
+        });
+    }   
+
+    async function setUpMediaRecorder(): Promise<MediaRecorder> {
+        const options: MediaRecorderOptions = {
+            mimeType: 'audio/webm; codecs=opus'
+        };
+        const stream = await setupMediaStream();
+        return new MediaRecorder(stream, options);
+    }
+
+    async function startRecording(): Promise<RecordingComponents> {
+        const chunks: Blob[] = [];
+        const mediaRecorder = !recorder ? await setUpMediaRecorder() : recorder;
+
+        mediaRecorder.ondataavailable = (e: BlobEvent) => {
+            chunks.push(e.data);
+        };
+
+        mediaRecorder.start();
+
+        console.log("gravacao comecou!");
+
+        return {
+            mediaRecorder,
+            chunks
+        };
+    }
+
     async function getDataResponse(blob: Blob) {
-        const response = await sendAudioToServer(blob);
+        const response = await transcriptePost(blob);
         const data = await response.json();
 
         console.log("Resposta da requisição");
@@ -85,98 +128,5 @@ export function AudioRecordButton() {
             <TextResult text={response}/>
         </>
     );
-
-}
-
-async function setupAudioComponent(): Promise<MediaStream> {
-
-    try {
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true
-        });
-
-        console.log("acesso ok!");
-
-        return stream;
-
-    } catch (err) {
-        alert("tem que ter acesso!");
-        throw new Error("sem acesso");
-    }
-
-}
-
-interface RecordingComponents {
-    mediaRecorder: MediaRecorder;
-    chunks: Blob[];
-}
-
-function startRecording(stream: MediaStream): RecordingComponents {
-
-    const options: MediaRecorderOptions = {
-        mimeType: 'audio/webm; codecs=opus'
-    };
-
-    const chunks: Blob[] = [];
-    const mediaRecorder = new MediaRecorder(stream, options);
-
-    mediaRecorder.ondataavailable = (e: BlobEvent) => {
-        chunks.push(e.data);
-    };
-
-    mediaRecorder.start();
-
-    console.log("gravacao comecou!");
-
-    return {
-        mediaRecorder,
-        chunks
-    };
-
-}
-
-function stopRecording(mediaRecorder: MediaRecorder, chunks: Blob[]): Promise<Blob> {
-
-    if (mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-        console.log("parando...");
-    }
-
-    return new Promise((resolve) => {
-
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(chunks, { type: 'audio/webm' });
-            resolve(blob);
-        };
-
-        console.log("gravacao parou.");
-
-    });
-
-}
-
-async function sendAudioToServer(blob: Blob): Promise<Response> {
-
-    if (blob.size === 0) {
-        throw new Error("Vazio");
-    }
-
-    const formData = new FormData();
-
-    formData.append('audio', blob, 'gravacao.webm');
-
-    const response = await fetch('http://localhost:5000/transcribe', {
-        method: 'POST',
-        body: formData
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
-    }
-
-    console.log("enviado");
-    return response;
 
 }
