@@ -69,3 +69,18 @@ button {
 .active {
     background-color: red;
 }
+.header {
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 20px 0;
+position: relative;
+transform: translateY(-150px);
+background-color: transparent;
+}
+
+.header-logo {
+height:340px;
+object-fit: contain;
+background-color: transparent;
+}
