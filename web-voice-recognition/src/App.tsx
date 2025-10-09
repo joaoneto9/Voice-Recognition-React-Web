@@ -1,15 +1,15 @@
-import { AudioRecordButton } from './components/AudioRecordButton';
+import { AudioRecordButton } from "./components/AudioRecordButton";
+import { Header } from "./components/Header";
 
 function App() {
-
   return (
     <>
-      <body>
+      <Header />
+      <main>
         <AudioRecordButton />
-      </body>
+      </main>
     </>
   );
-
 }
 
-export default App
+export default App;
