@@ -121,18 +121,18 @@ export function AudioRecordButton() {
     }
 
     return (
-        <>
-            <div className="sound_button_container">
-                <button 
-                    id="audio-button"
+        <main>
+            <div className="audio_button_container">
+                <button
+                    id="audio_button"
                     onClick={handleRecordAudio}
-                    className={isActive ? 'active' : ''} 
-                    >
-                    <FaMicrophone size={80}/>
+                    className={isActive ? 'active' : ''}
+                >
+                    <FaMicrophone size={80} />
                 </button>
             </div>
-            <TextResult text={response}/>
-        </>
+            <TextResult text={response} />
+        </main>
     );
 
 }

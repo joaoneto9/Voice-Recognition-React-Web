@@ -8,15 +8,21 @@ body {
     width: 100vw;
     height: 100vh;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
 }
 
-div {
+header {
+    height: 45vh;
+    width: 100vw;
+}
+
+main {
+    height: 10vh;
+    width: 100vw;
     display: flex;
-    justify-content: center;
     align-items: center;
-    padding-bottom: 50px;
+    justify-content: center;
+    gap: 200px;
 }
 
 button {
@@ -25,17 +31,11 @@ button {
     align-items: center;
 }
 
-.sound_button_container {
-    position: absolute;
-    left: 100px;
+.audio_button_container{
     width: 50px;
-    bottom: 0; /*os elemntos vao para baixo*/
 }
 
 .text_container {
-    position: absolute; 
-    right: 20px;        /* distância da direita */
-    top: 150px;          /* distância do topo, ajuste como quiser */
     width: 400px;       /* largura da div */
     background-color: #ebe9e9; /* opcional, para visualizar */
     padding: 10px;
@@ -55,7 +55,7 @@ button {
 }
 
 
-#audio-button {
+#audio_button {
     padding: 50px;
     border-radius: 50%;
     cursor: pointer;
@@ -69,18 +69,18 @@ button {
 .active {
     background-color: red;
 }
+
 .header {
 display: flex;
 justify-content: center;
 align-items: center;
-padding: 20px 0;
 position: relative;
 transform: translateY(-150px);
 background-color: transparent;
 }
 
 .header-logo {
-height:340px;
+height:250px;
 object-fit: contain;
 background-color: transparent;
 }
