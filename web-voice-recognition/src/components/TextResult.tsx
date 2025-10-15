@@ -1,8 +1,10 @@
-interface TextInterface {
+import "../style/style.css"
+
+interface Props {
     text: string
 }
 
-export default function TextResultButton({text}: TextInterface) {
+export default function TextResult({text}: Props) {
     return (
         <div className="text_container">
             <h4>Texto Transcrito:</h4>
