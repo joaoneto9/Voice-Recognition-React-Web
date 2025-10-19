@@ -8,14 +8,14 @@ interface RecordingComponents {
 }
 
 interface Props {
-    setText: (noewText: string) => void;
+    setText: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function AudioRecordButton({setText}: Props) {
 
     const [isActive, setIsActive] = useState<boolean>(false);
     const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
-    const [audioChunks, setAudioChunks] = useState<Blob[] | null>(null);
+    const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
 
     async function handleRecordAudio() {
         const isRecording = !isActive;
@@ -26,7 +26,7 @@ export function AudioRecordButton({setText}: Props) {
                 const blob = await stopRecording();
                 const text = await getDataResponse(blob);
 
-                setText(text);
+                setText(text.substring(text.length - 1) == "." ? text : text + ".");
             } catch (err) {
                 console.log("erro parando a gravacao..." + err);
             }
@@ -99,11 +99,29 @@ export function AudioRecordButton({setText}: Props) {
         const chunks: Blob[] = [];
         const mediaRecorder = !recorder ? await setUpMediaRecorder() : recorder;
 
-        mediaRecorder.ondataavailable = (e: BlobEvent) => {
-            chunks.push(e.data);
+        let processing = false;
+
+        // é acionado quando passa o timeslap determinado ou quando é chamado .stop()
+        mediaRecorder.ondataavailable = async (e: BlobEvent) => {
+            if (!e.data.size)
+                return;
+
+            chunks.push(e.data); // audio acumulados -> esperam a gravação agora
+
+            if (processing || mediaRecorder.state === 'inactive') // se estiver inativo, ou seja, .stop() foi chamado -> ele interrompe o envio "prévio", pois deve apenas "focar" no envio final.
+                return;
+
+            processing = true;
+
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            const text: string = await getDataResponse(blob);
+
+            setText(text.substring(text.length - 1) == "." ? text + ".." : text + "...");
+
+            processing = false;
         };
 
-        mediaRecorder.start();
+        mediaRecorder.start(2500);
 
         console.log("gravacao comecou!");
 
