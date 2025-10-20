@@ -1,6 +1,5 @@
 import { FaMicrophone } from 'react-icons/fa'
 import { useState } from 'react'
-import TextResult from './TextResult'
 import { transcriptePost } from '../requests/trasncriptPost'
 
 interface RecordingComponents {
@@ -8,13 +7,16 @@ interface RecordingComponents {
     chunks: Blob[];
 }
 
-export function AudioRecordButton() {
+interface Props {
+    setText: React.Dispatch<React.SetStateAction<string>>;
+}
+
+export function AudioRecordButton({setText}: Props) {
 
     const [isActive, setIsActive] = useState<boolean>(false);
-    const [response, setResponse] = useState<string>("");
     const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
-    const [audioChunks, setAudioChunks] = useState<Blob[] | null>(null);
-    
+    const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+
     async function handleRecordAudio() {
         const isRecording = !isActive;
         setIsActive(isRecording);
@@ -24,21 +26,21 @@ export function AudioRecordButton() {
                 const blob = await stopRecording();
                 const text = await getDataResponse(blob);
 
-                setResponse(text);
+                setText(text.substring(text.length - 1) == "." ? text : text + ".");
             } catch (err) {
                 console.log("erro parando a gravacao..." + err);
             }
         } else {
             try {            
                 const {mediaRecorder, chunks} = await startRecording();
-                setRecorder(mediaRecorder);
                 
+                setRecorder(mediaRecorder);
                 setAudioChunks(chunks);
             } catch (err) {
                 console.log("erro: " + err);
             }
         }
-    };
+    }
 
     async function setupMediaStream(): Promise<MediaStream> {
 
@@ -97,11 +99,29 @@ export function AudioRecordButton() {
         const chunks: Blob[] = [];
         const mediaRecorder = !recorder ? await setUpMediaRecorder() : recorder;
 
-        mediaRecorder.ondataavailable = (e: BlobEvent) => {
-            chunks.push(e.data);
+        let processing = false;
+
+        // é acionado quando passa o timeslap determinado ou quando é chamado .stop()
+        mediaRecorder.ondataavailable = async (e: BlobEvent) => {
+            if (!e.data.size)
+                return;
+
+            chunks.push(e.data); // audio acumulados -> esperam a gravação agora
+
+            if (processing || mediaRecorder.state === 'inactive') // se estiver inativo, ou seja, .stop() foi chamado -> ele interrompe o envio "prévio", pois deve apenas "focar" no envio final.
+                return;
+
+            processing = true;
+
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            const text: string = await getDataResponse(blob);
+
+            setText(text.substring(text.length - 1) == "." ? text + ".." : text + "...");
+
+            processing = false;
         };
 
-        mediaRecorder.start();
+        mediaRecorder.start(2500);
 
         console.log("gravacao comecou!");
 
@@ -121,18 +141,16 @@ export function AudioRecordButton() {
     }
 
     return (
-        <main>
-            <div className="audio_button_container">
-                <button
-                    id="audio_button"
-                    onClick={handleRecordAudio}
-                    className={isActive ? 'active' : ''}
-                >
-                    <FaMicrophone size={80} />
-                </button>
-            </div>
-            <TextResult text={response} />
-        </main>
+        <div className="audio_button_container">
+            <button
+                id="audio_button"
+                onClick={handleRecordAudio}
+                className={isActive ? 'active' : ''}
+            >
+                <FaMicrophone size={80} />
+            </button>
+        </div>
     );
 
 }
+

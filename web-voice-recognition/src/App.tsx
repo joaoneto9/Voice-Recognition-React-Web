@@ -1,13 +1,9 @@
-import { AudioRecordButton } from "./components/AudioRecordButton";
-import { Header } from "./components/Header";
+import RecordAudioPage from './pages/RecordAudioPage'
 
 function App() {
   return (
     <>
-      <body>
-        <Header />
-        <AudioRecordButton />
-      </body>
+      <RecordAudioPage />
     </>
   );
 }
